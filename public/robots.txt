@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sublimation-art-creator.lovable.app/sitemap.xml
