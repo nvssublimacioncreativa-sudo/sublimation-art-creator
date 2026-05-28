@@ -67,6 +67,16 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+const jsonLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Sublimarte",
+  description: "Generador de imágenes PNG para sublimación con IA.",
+  url: "https://sublimation-art-creator.lovable.app/",
+  applicationCategory: "DesignApplication",
+  inLanguage: "es",
+});
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -80,34 +90,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "keywords", content: "sublimación, imágenes para sublimar, diseños sublimar, día del padre, mundial 2026, generador IA, PNG sublimar, tazas, playeras" },
       { property: "og:title", content: "Sublimarte — Generador de imágenes para sublimar con IA" },
-      { property: "og:description", content: "Sublimation Studio creates custom images for sublimation printing, ready for web sharing and search indexing." },
+      { property: "og:description", content: "Crea diseños PNG listos para sublimar en tazas, playeras y más. Plantillas de Día del Padre, Mundial 2026 y diseños personalizados con IA." },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Sublimarte" },
       { property: "og:url", content: "https://sublimation-art-creator.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Sublimarte — Generador de imágenes para sublimar con IA" },
-      { name: "twitter:description", content: "Sublimation Studio creates custom images for sublimation printing, ready for web sharing and search indexing." },
-      { name: "description", content: "Sublimation Studio creates custom images for sublimation printing, ready for web sharing and search indexing." },
+      { name: "twitter:description", content: "Crea diseños PNG listos para sublimar en tazas, playeras y más. Plantillas de Día del Padre, Mundial 2026 y diseños personalizados con IA." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/57e36866-1958-4e47-8f95-09f61ef5890c/id-preview-90c7193e--59773702-00bd-435e-99cc-16031614c067.lovable.app-1779932112454.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/57e36866-1958-4e47-8f95-09f61ef5890c/id-preview-90c7193e--59773702-00bd-435e-99cc-16031614c067.lovable.app-1779932112454.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "canonical", href: "https://sublimation-art-creator.lovable.app/" },
-    ],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebApplication",
-          name: "Sublimarte",
-          description: "Generador de imágenes PNG para sublimación con IA.",
-          url: "https://sublimation-art-creator.lovable.app/",
-          applicationCategory: "DesignApplication",
-          inLanguage: "es",
-        }),
-      },
     ],
   }),
 
@@ -119,9 +114,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <head>
         <HeadContent />
+        <script
+          type="application/ld+json"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: jsonLd }}
+        />
       </head>
       <body>
         {children}
