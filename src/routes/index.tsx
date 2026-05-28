@@ -1,29 +1,239 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { streamImage } from "@/lib/streamImage";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Download, Sparkles, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Sublimarte — Imágenes para sublimar con IA" },
+      {
+        name: "description",
+        content:
+          "Genera diseños PNG listos para sublimar: Día del Padre, Mundial y más.",
+      },
     ],
   }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
+type Preset = {
+  label: string;
+  emoji: string;
+  prompt: string;
+};
+
+const PRESETS: Preset[] = [
+  {
+    label: "Día del Padre — Clásico",
+    emoji: "👔",
+    prompt:
+      "Diseño para sublimar en taza/playera: 'FELIZ DÍA PAPÁ' tipografía vintage retro, corbata, bigote, lentes, sombrero, paleta café/azul marino/dorado, estilo cricut, líneas limpias, alta resolución, sobre fondo blanco sólido",
+  },
+  {
+    label: "Día del Padre — Súper Papá",
+    emoji: "🦸",
+    prompt:
+      "Diseño para sublimación: 'SÚPER PAPÁ' con capa de superhéroe, escudo estilo cómic, colores rojo, azul y amarillo vibrantes, ilustración vectorial limpia, alto contraste, fondo blanco sólido",
+  },
+  {
+    label: "Día del Padre — Pesca/BBQ",
+    emoji: "🎣",
+    prompt:
+      "Diseño sublimación: 'EL MEJOR PAPÁ' con caña de pescar, parrilla BBQ, cerveza, estilo retro americano años 70, paleta naranja mostaza y verde bosque, ilustración vectorial, fondo blanco",
+  },
+  {
+    label: "Mundial — México",
+    emoji: "🇲🇽",
+    prompt:
+      "Diseño para sublimar playera: 'MÉXICO MUNDIAL 2026' con balón de fútbol, águila azteca estilizada, bandera de México, tipografía deportiva moderna, verde blanco y rojo, estilo grunge deportivo, fondo blanco sólido",
+  },
+  {
+    label: "Mundial — Aficionado",
+    emoji: "⚽",
+    prompt:
+      "Diseño sublimación playera: balón de fútbol en llamas, trofeo del mundial, confeti, 'WORLD CUP 2026' tipografía bold deportiva, colores vibrantes oro y rojo, estilo ilustración vectorial premium, fondo blanco sólido",
+  },
+  {
+    label: "Mundial — Vintage",
+    emoji: "🏆",
+    prompt:
+      "Diseño retro vintage para sublimar: escudo de fútbol con balón clásico, banderines, '26' grande, tipografía college americana, paleta sepia crema y rojo vino, textura desgastada, fondo blanco sólido",
+  },
+];
+
 function Index() {
+  const [prompt, setPrompt] = useState("");
+  const [src, setSrc] = useState<string | null>(null);
+  const [isFinal, setIsFinal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function generate(p: string) {
+    if (!p.trim() || loading) return;
+    setLoading(true);
+    setError(null);
+    setSrc(null);
+    setIsFinal(false);
+    try {
+      await streamImage("/api/generate-image", p, (dataUrl, final) => {
+        setSrc(dataUrl);
+        if (final) setIsFinal(true);
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function download() {
+    if (!src || !isFinal) return;
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = `sublimacion-${Date.now()}.png`;
+    a.click();
+  }
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
+      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-10 bg-background/80">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-2">
+          <div className="size-9 rounded-lg bg-primary text-primary-foreground grid place-items-center">
+            <Sparkles className="size-5" />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg leading-tight">Sublimarte</h1>
+            <p className="text-xs text-muted-foreground">
+              Diseños IA listos para sublimar
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        <section className="text-center space-y-3">
+          <Badge variant="secondary" className="gap-1">
+            <Sparkles className="size-3" /> Día del Padre · Mundial 2026
+          </Badge>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+            Crea tus diseños para sublimar
+          </h2>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Elige una plantilla o describe tu propio diseño. La IA genera un PNG
+            que puedes descargar.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Plantillas rápidas
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {PRESETS.map((p) => (
+              <button
+                key={p.label}
+                disabled={loading}
+                onClick={() => {
+                  setPrompt(p.prompt);
+                  generate(p.prompt);
+                }}
+                className="group text-left rounded-xl border border-border bg-card hover:border-primary hover:shadow-md transition-all p-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="text-2xl mb-1">{p.emoji}</div>
+                <div className="font-medium text-sm leading-tight">
+                  {p.label}
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <Card className="p-4 sm:p-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">
+              O describe tu propio diseño
+            </label>
+            <Textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Ej: Taza día del padre con balón de fútbol y 'El mejor coach de la vida'..."
+              rows={3}
+              disabled={loading}
+            />
+          </div>
+          <Button
+            onClick={() => generate(prompt)}
+            disabled={loading || !prompt.trim()}
+            className="w-full"
+            size="lg"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="size-4 animate-spin" /> Generando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="size-4" /> Generar imagen
+              </>
+            )}
+          </Button>
+        </Card>
+
+        {(src || error) && (
+          <Card className="p-4 sm:p-6 space-y-4">
+            {error && (
+              <div className="rounded-md bg-destructive/10 text-destructive text-sm p-3">
+                {error}
+              </div>
+            )}
+            {src && (
+              <>
+                <div className="relative aspect-square w-full max-w-xl mx-auto rounded-lg overflow-hidden bg-[conic-gradient(at_top_left,_var(--tw-gradient-stops))] from-muted to-secondary">
+                  <img
+                    src={src}
+                    alt="Diseño generado"
+                    className={
+                      "w-full h-full object-contain transition-[filter] duration-500 " +
+                      (isFinal ? "blur-0" : "blur-xl")
+                    }
+                  />
+                  {!isFinal && (
+                    <div className="absolute inset-0 grid place-items-center pointer-events-none">
+                      <div className="bg-background/80 backdrop-blur rounded-full px-4 py-2 flex items-center gap-2 text-sm">
+                        <Loader2 className="size-4 animate-spin" />
+                        Renderizando...
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  onClick={download}
+                  disabled={!isFinal}
+                  variant="secondary"
+                  className="w-full"
+                  size="lg"
+                >
+                  <Download className="size-4" />
+                  {isFinal ? "Descargar PNG" : "Esperando imagen final..."}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Tip: para sublimación usa 300 DPI y recorta el fondo blanco
+                  con tu programa de edición.
+                </p>
+              </>
+            )}
+          </Card>
+        )}
+      </main>
+
+      <footer className="py-8 text-center text-xs text-muted-foreground">
+        Hecho con IA · Sublimarte
+      </footer>
     </div>
   );
 }
