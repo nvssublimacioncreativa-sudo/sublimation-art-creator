@@ -10,12 +10,36 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as Mundial2026RouteImport } from './routes/mundial-2026'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as DiaDelPadreRouteImport } from './routes/dia-del-padre'
+import { Route as ComoSublimarRouteImport } from './routes/como-sublimar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiGenerateImageRouteImport } from './routes/api/generate-image'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Mundial2026Route = Mundial2026RouteImport.update({
+  id: '/mundial-2026',
+  path: '/mundial-2026',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiaDelPadreRoute = DiaDelPadreRouteImport.update({
+  id: '/dia-del-padre',
+  path: '/dia-del-padre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComoSublimarRoute = ComoSublimarRouteImport.update({
+  id: '/como-sublimar',
+  path: '/como-sublimar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,30 +55,68 @@ const ApiGenerateImageRoute = ApiGenerateImageRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/como-sublimar': typeof ComoSublimarRoute
+  '/dia-del-padre': typeof DiaDelPadreRoute
+  '/faq': typeof FaqRoute
+  '/mundial-2026': typeof Mundial2026Route
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/generate-image': typeof ApiGenerateImageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/como-sublimar': typeof ComoSublimarRoute
+  '/dia-del-padre': typeof DiaDelPadreRoute
+  '/faq': typeof FaqRoute
+  '/mundial-2026': typeof Mundial2026Route
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/generate-image': typeof ApiGenerateImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/como-sublimar': typeof ComoSublimarRoute
+  '/dia-del-padre': typeof DiaDelPadreRoute
+  '/faq': typeof FaqRoute
+  '/mundial-2026': typeof Mundial2026Route
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/generate-image': typeof ApiGenerateImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sitemap.xml' | '/api/generate-image'
+  fullPaths:
+    | '/'
+    | '/como-sublimar'
+    | '/dia-del-padre'
+    | '/faq'
+    | '/mundial-2026'
+    | '/sitemap.xml'
+    | '/api/generate-image'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sitemap.xml' | '/api/generate-image'
-  id: '__root__' | '/' | '/sitemap.xml' | '/api/generate-image'
+  to:
+    | '/'
+    | '/como-sublimar'
+    | '/dia-del-padre'
+    | '/faq'
+    | '/mundial-2026'
+    | '/sitemap.xml'
+    | '/api/generate-image'
+  id:
+    | '__root__'
+    | '/'
+    | '/como-sublimar'
+    | '/dia-del-padre'
+    | '/faq'
+    | '/mundial-2026'
+    | '/sitemap.xml'
+    | '/api/generate-image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ComoSublimarRoute: typeof ComoSublimarRoute
+  DiaDelPadreRoute: typeof DiaDelPadreRoute
+  FaqRoute: typeof FaqRoute
+  Mundial2026Route: typeof Mundial2026Route
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiGenerateImageRoute: typeof ApiGenerateImageRoute
 }
@@ -66,6 +128,34 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mundial-2026': {
+      id: '/mundial-2026'
+      path: '/mundial-2026'
+      fullPath: '/mundial-2026'
+      preLoaderRoute: typeof Mundial2026RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dia-del-padre': {
+      id: '/dia-del-padre'
+      path: '/dia-del-padre'
+      fullPath: '/dia-del-padre'
+      preLoaderRoute: typeof DiaDelPadreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/como-sublimar': {
+      id: '/como-sublimar'
+      path: '/como-sublimar'
+      fullPath: '/como-sublimar'
+      preLoaderRoute: typeof ComoSublimarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -87,19 +177,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ComoSublimarRoute: ComoSublimarRoute,
+  DiaDelPadreRoute: DiaDelPadreRoute,
+  FaqRoute: FaqRoute,
+  Mundial2026Route: Mundial2026Route,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiGenerateImageRoute: ApiGenerateImageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
