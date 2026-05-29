@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { streamImage } from "@/lib/streamImage";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Download, Sparkles, Loader2 } from "lucide-react";
+import { SiteNav, SiteFooter } from "@/components/SiteNav";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -101,19 +102,9 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
-      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-10 bg-background/80">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-2">
-          <div className="size-9 rounded-lg bg-primary text-primary-foreground grid place-items-center">
-            <Sparkles className="size-5" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg leading-tight">Sublimarte</h1>
-            <p className="text-xs text-muted-foreground">
-              Diseños IA listos para sublimar
-            </p>
-          </div>
-        </div>
-      </header>
+      <SiteNav />
+
+
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <section className="text-center space-y-3">
@@ -229,11 +220,21 @@ function Index() {
             )}
           </Card>
         )}
+        <section className="grid sm:grid-cols-2 gap-3 pt-4">
+          <Link to="/dia-del-padre" className="rounded-xl border border-border bg-card p-5 hover:border-primary transition-colors">
+            <div className="text-2xl mb-1">👔</div>
+            <div className="font-semibold">Diseños Día del Padre →</div>
+            <p className="text-sm text-muted-foreground mt-1">Plantillas e ideas listas para sublimar.</p>
+          </Link>
+          <Link to="/mundial-2026" className="rounded-xl border border-border bg-card p-5 hover:border-primary transition-colors">
+            <div className="text-2xl mb-1">⚽</div>
+            <div className="font-semibold">Mundial 2026 →</div>
+            <p className="text-sm text-muted-foreground mt-1">Diseños deportivos para playeras y tazas.</p>
+          </Link>
+        </section>
       </main>
 
-      <footer className="py-8 text-center text-xs text-muted-foreground">
-        Hecho con IA · Sublimarte
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
