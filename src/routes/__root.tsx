@@ -82,6 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "google-site-verification", content: "nu3jc_hQB0iv3ylVTw-gVtimOYpwlJ9-JQwy_zrGyn4" },
       { title: "Sublimarte — Generador de imágenes para sublimar con IA" },
       {
         name: "description",
