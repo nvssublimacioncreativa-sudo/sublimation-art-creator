@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Sparkles, Loader2 } from "lucide-react";
+import { Download, Sparkles, Loader2, Upload, X } from "lucide-react";
+
 import { SiteNav, SiteFooter } from "@/components/SiteNav";
 
 export const Route = createFileRoute("/")({
