@@ -171,16 +171,62 @@ function Index() {
         <Card className="p-4 sm:p-6 space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-semibold">
-              O describe tu propio diseño
+              Sube una foto (opcional)
+            </label>
+            {uploadedImage ? (
+              <div className="relative inline-block">
+                <img
+                  src={uploadedImage}
+                  alt="Foto subida"
+                  className="max-h-40 rounded-lg border border-border"
+                />
+                <button
+                  type="button"
+                  onClick={() => setUploadedImage(null)}
+                  disabled={loading}
+                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow"
+                  aria-label="Quitar imagen"
+                >
+                  <X className="size-3" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border hover:border-primary cursor-pointer p-4 text-sm text-muted-foreground transition-colors">
+                <Upload className="size-4" />
+                Haz clic para subir una foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={loading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleFile(f);
+                  }}
+                />
+              </label>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Si subes una foto, la IA la usará como referencia para crear tu diseño.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">
+              Describe tu diseño
             </label>
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Ej: Taza día del padre con balón de fútbol y 'El mejor coach de la vida'..."
+              placeholder={
+                uploadedImage
+                  ? "Ej: Convierte esta foto en un diseño estilo cartoon para sublimar en playera, fondo blanco"
+                  : "Ej: Taza día del padre con balón de fútbol y 'El mejor coach de la vida'..."
+              }
               rows={3}
               disabled={loading}
             />
           </div>
+
           <Button
             onClick={() => generate(prompt)}
             disabled={loading || !prompt.trim()}
