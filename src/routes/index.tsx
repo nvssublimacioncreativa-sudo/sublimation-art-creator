@@ -74,6 +74,22 @@ function Index() {
   const [isFinal, setIsFinal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+
+  async function handleFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      setError("Solo se permiten imágenes");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError("La imagen debe pesar menos de 8MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setUploadedImage(reader.result as string);
+    reader.readAsDataURL(file);
+    setError(null);
+  }
 
   async function generate(p: string) {
     if (!p.trim() || loading) return;
@@ -82,16 +98,23 @@ function Index() {
     setSrc(null);
     setIsFinal(false);
     try {
-      await streamImage("/api/generate-image", p, (dataUrl, final) => {
-        setSrc(dataUrl);
-        if (final) setIsFinal(true);
-      });
+      await streamImage(
+        "/api/generate-image",
+        p,
+        (dataUrl, final) => {
+          setSrc(dataUrl);
+          if (final) setIsFinal(true);
+        },
+        undefined,
+        uploadedImage ?? undefined,
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
       setLoading(false);
     }
   }
+
 
   function download() {
     if (!src || !isFinal) return;
