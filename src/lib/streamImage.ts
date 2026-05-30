@@ -19,13 +19,15 @@ export async function streamImage(
   prompt: string,
   onFrame: (dataUrl: string, isFinal: boolean) => void,
   signal?: AbortSignal,
+  image?: string,
 ): Promise<void> {
   const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(image ? { prompt, image } : { prompt }),
     signal,
   });
+
   if (!res.ok || !res.body) {
     const msg = await res.text().catch(() => "");
     throw new Error(msg || `Falló la generación (${res.status})`);
