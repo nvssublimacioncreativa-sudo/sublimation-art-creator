@@ -4,12 +4,42 @@ export const Route = createFileRoute("/api/generate-image")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { prompt } = (await request.json()) as { prompt?: string };
+        const { prompt, image } = (await request.json()) as {
+          prompt?: string;
+          image?: string; // data URL opcional
+        };
         if (!prompt || typeof prompt !== "string") {
           return new Response("Prompt requerido", { status: 400 });
         }
         const key = process.env.LOVABLE_API_KEY;
         if (!key) return new Response("Falta LOVABLE_API_KEY", { status: 500 });
+
+        // Si hay imagen, usar Gemini (soporta edición/inspiración a partir de imagen)
+        // Si no, usar gpt-image-2 con calidad rápida.
+        const body = image
+          ? {
+              model: "google/gemini-3.1-flash-image-preview",
+              modalities: ["image", "text"],
+              stream: true,
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: prompt },
+                    { type: "image_url", image_url: { url: image } },
+                  ],
+                },
+              ],
+            }
+          : {
+              model: "openai/gpt-image-2",
+              prompt,
+              size: "1024x1024",
+              quality: "low",
+              n: 1,
+              stream: true,
+              partial_images: 2,
+            };
 
         const upstream = await fetch(
           "https://ai.gateway.lovable.dev/v1/images/generations",
@@ -19,15 +49,7 @@ export const Route = createFileRoute("/api/generate-image")({
               Authorization: `Bearer ${key}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              model: "openai/gpt-image-2",
-              prompt,
-              size: "1024x1024",
-              quality: "low",
-              n: 1,
-              stream: true,
-              partial_images: 2,
-            }),
+            body: JSON.stringify(body),
             signal: request.signal,
           },
         );
