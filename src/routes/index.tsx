@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Sparkles, Loader2, Upload, X } from "lucide-react";
+import { Download, Sparkles, Loader2, Upload, X, Mic, Square } from "lucide-react";
 
 import { SiteNav, SiteFooter } from "@/components/SiteNav";
 
@@ -66,6 +66,31 @@ const PRESETS: Preset[] = [
       "Diseño retro vintage para sublimar: escudo de fútbol con balón clásico, banderines, '26' grande, tipografía college americana, paleta sepia crema y rojo vino, textura desgastada, fondo blanco sólido",
   },
 ];
+
+type SpeechRecognitionConstructor = new () => {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: { results: SpeechRecognitionResultList }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+};
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
+
+function dataUrlToPngBlob(dataUrl: string) {
+  const [header, base64] = dataUrl.split(",");
+  if (!header?.includes("base64") || !base64) throw new Error("Imagen inválida");
+  const binary = window.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: "image/png" });
+}
 
 function Index() {
   const [prompt, setPrompt] = useState("");
