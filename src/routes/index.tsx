@@ -299,6 +299,23 @@ function Index() {
               rows={3}
               disabled={loading}
             />
+            <Button
+              type="button"
+              onClick={toggleVoiceInput}
+              disabled={loading}
+              variant={listening ? "destructive" : "outline"}
+              className="w-full"
+            >
+              {listening ? (
+                <>
+                  <Square className="size-4" /> Detener audio
+                </>
+              ) : (
+                <>
+                  <Mic className="size-4" /> Hablar descripción
+                </>
+              )}
+            </Button>
           </div>
 
           <Button
@@ -354,11 +371,15 @@ function Index() {
                   size="lg"
                 >
                   <Download className="size-4" />
-                  {isFinal ? "Descargar PNG" : "Esperando imagen final..."}
+                  {isFinal ? "Descargar PNG listo para imprimir" : "Esperando imagen final..."}
                 </Button>
+                {downloadReady && (
+                  <p className="text-xs text-primary text-center font-medium">
+                    Imagen lista: toca el botón para descargar el PNG.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground text-center">
-                  Tip: para sublimación usa 300 DPI y recorta el fondo blanco con tu programa de
-                  edición.
+                  Diseñado para sublimación con colores vivos y salida PNG.
                 </p>
               </>
             )}
