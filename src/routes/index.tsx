@@ -15,8 +15,7 @@ export const Route = createFileRoute("/")({
       { title: "Sublimarte — Imágenes para sublimar con IA" },
       {
         name: "description",
-        content:
-          "Genera diseños PNG listos para sublimar: Día del Padre, Mundial y más.",
+        content: "Genera diseños PNG listos para sublimar: Día del Padre, Mundial y más.",
       },
     ],
   }),
@@ -115,7 +114,6 @@ function Index() {
     }
   }
 
-
   async function download() {
     if (!src || !isFinal) return;
     try {
@@ -141,8 +139,6 @@ function Index() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary">
       <SiteNav />
 
-
-
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <section className="text-center space-y-3">
           <Badge variant="secondary" className="gap-1">
@@ -152,8 +148,8 @@ function Index() {
             Crea tus diseños para sublimar
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Elige una plantilla o describe tu propio diseño. La IA genera un PNG
-            que puedes descargar.
+            Elige una plantilla o describe tu propio diseño. La IA genera un PNG que puedes
+            descargar.
           </p>
         </section>
 
@@ -173,9 +169,7 @@ function Index() {
                 className="group text-left rounded-xl border border-border bg-card hover:border-primary hover:shadow-md transition-all p-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="text-2xl mb-1">{p.emoji}</div>
-                <div className="font-medium text-sm leading-tight">
-                  {p.label}
-                </div>
+                <div className="font-medium text-sm leading-tight">{p.label}</div>
               </button>
             ))}
           </div>
@@ -183,9 +177,7 @@ function Index() {
 
         <Card className="p-4 sm:p-6 space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-semibold">
-              Sube una foto (opcional)
-            </label>
+            <label className="text-sm font-semibold">Sube una foto (opcional)</label>
             {uploadedImage ? (
               <div className="relative inline-block">
                 <img
@@ -224,9 +216,7 @@ function Index() {
             </p>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold">
-              Describe tu diseño
-            </label>
+            <label className="text-sm font-semibold">Describe tu diseño</label>
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -296,23 +286,33 @@ function Index() {
                   {isFinal ? "Descargar PNG" : "Esperando imagen final..."}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Tip: para sublimación usa 300 DPI y recorta el fondo blanco
-                  con tu programa de edición.
+                  Tip: para sublimación usa 300 DPI y recorta el fondo blanco con tu programa de
+                  edición.
                 </p>
               </>
             )}
           </Card>
         )}
         <section className="grid sm:grid-cols-2 gap-3 pt-4">
-          <Link to="/dia-del-padre" className="rounded-xl border border-border bg-card p-5 hover:border-primary transition-colors">
+          <Link
+            to="/dia-del-padre"
+            className="rounded-xl border border-border bg-card p-5 hover:border-primary transition-colors"
+          >
             <div className="text-2xl mb-1">👔</div>
             <div className="font-semibold">Diseños Día del Padre →</div>
-            <p className="text-sm text-muted-foreground mt-1">Plantillas e ideas listas para sublimar.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Plantillas e ideas listas para sublimar.
+            </p>
           </Link>
-          <Link to="/mundial-2026" className="rounded-xl border border-border bg-card p-5 hover:border-primary transition-colors">
+          <Link
+            to="/mundial-2026"
+            className="rounded-xl border border-border bg-card p-5 hover:border-primary transition-colors"
+          >
             <div className="text-2xl mb-1">⚽</div>
             <div className="font-semibold">Mundial 2026 →</div>
-            <p className="text-sm text-muted-foreground mt-1">Diseños deportivos para playeras y tazas.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Diseños deportivos para playeras y tazas.
+            </p>
           </Link>
         </section>
       </main>
