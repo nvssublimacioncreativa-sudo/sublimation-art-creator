@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { streamImage } from "@/lib/streamImage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -101,6 +101,7 @@ function Index() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [downloadReady, setDownloadReady] = useState(false);
+  const recognitionRef = useRef<InstanceType<SpeechRecognitionConstructor> | null>(null);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -167,6 +168,13 @@ function Index() {
   }
 
   function toggleVoiceInput() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+      setListening(false);
+      return;
+    }
+
     const SpeechRecognition =
       (window as SpeechWindow).SpeechRecognition ??
       (window as SpeechWindow).webkitSpeechRecognition;
@@ -192,6 +200,7 @@ function Index() {
       setListening(false);
     };
     recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
     setError(null);
     setListening(true);
     recognition.start();
