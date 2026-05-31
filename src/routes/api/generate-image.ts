@@ -48,18 +48,15 @@ export const Route = createFileRoute("/api/generate-image")({
               partial_images: 2,
             };
 
-        const upstream = await fetch(
-          "https://ai.gateway.lovable.dev/v1/images/generations",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${key}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-            signal: request.signal,
+        const upstream = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify(body),
+          signal: request.signal,
+        });
 
         if (!upstream.ok || !upstream.body) {
           const text = await upstream.text().catch(() => "");

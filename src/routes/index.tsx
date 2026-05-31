@@ -102,7 +102,10 @@ async function imageToTransparentPngBlob(source: string) {
   canvas.width = image.naturalWidth || image.width;
   canvas.height = image.naturalHeight || image.height;
   const context = canvas.getContext("2d");
-  if (!context) return source.startsWith("data:") ? dataUrlToPngBlob(source) : fetch(source).then((r) => r.blob());
+  if (!context)
+    return source.startsWith("data:")
+      ? dataUrlToPngBlob(source)
+      : fetch(source).then((r) => r.blob());
 
   context.drawImage(image, 0, 0);
   const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -115,7 +118,10 @@ async function imageToTransparentPngBlob(source: string) {
   context.putImageData(imageData, 0, 0);
 
   return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("PNG inválido"))), "image/png");
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("PNG inválido"))),
+      "image/png",
+    );
   });
 }
 
