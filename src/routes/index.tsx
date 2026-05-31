@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { streamImage } from "@/lib/streamImage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Sparkles, Loader2, Upload, X } from "lucide-react";
+import { Download, Sparkles, Loader2, Upload, X, Mic, Square } from "lucide-react";
 
 import { SiteNav, SiteFooter } from "@/components/SiteNav";
 
@@ -67,6 +67,64 @@ const PRESETS: Preset[] = [
   },
 ];
 
+type SpeechRecognitionConstructor = new () => {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+};
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
+
+function dataUrlToPngBlob(dataUrl: string) {
+  const [header, base64] = dataUrl.split(",");
+  if (!header?.includes("base64") || !base64) throw new Error("Imagen inválida");
+  const binary = window.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: "image/png" });
+}
+
+async function imageToTransparentPngBlob(source: string) {
+  const image = new Image();
+  image.decoding = "async";
+  image.src = source;
+  await image.decode();
+
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const context = canvas.getContext("2d");
+  if (!context)
+    return source.startsWith("data:")
+      ? dataUrlToPngBlob(source)
+      : fetch(source).then((r) => r.blob());
+
+  context.drawImage(image, 0, 0);
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  for (let index = 0; index < imageData.data.length; index += 4) {
+    const red = imageData.data[index];
+    const green = imageData.data[index + 1];
+    const blue = imageData.data[index + 2];
+    if (red > 245 && green > 245 && blue > 245) imageData.data[index + 3] = 0;
+  }
+  context.putImageData(imageData, 0, 0);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("PNG inválido"))),
+      "image/png",
+    );
+  });
+}
+
 function Index() {
   const [prompt, setPrompt] = useState("");
   const [src, setSrc] = useState<string | null>(null);
@@ -74,6 +132,9 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const [downloadReady, setDownloadReady] = useState(false);
+  const recognitionRef = useRef<InstanceType<SpeechRecognitionConstructor> | null>(null);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -96,13 +157,17 @@ function Index() {
     setError(null);
     setSrc(null);
     setIsFinal(false);
+    setDownloadReady(false);
     try {
       await streamImage(
         "/api/generate-image",
         p,
         (dataUrl, final) => {
           setSrc(dataUrl);
-          if (final) setIsFinal(true);
+          if (final) {
+            setIsFinal(true);
+            setDownloadReady(true);
+          }
         },
         undefined,
         uploadedImage ?? undefined,
@@ -117,8 +182,7 @@ function Index() {
   async function download() {
     if (!src || !isFinal) return;
     try {
-      const response = await fetch(src);
-      const blob = await response.blob();
+      const blob = await imageToTransparentPngBlob(src);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -128,11 +192,51 @@ function Index() {
       a.click();
       a.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setDownloadReady(false);
     } catch {
       setError(
         "No se pudo iniciar la descarga. Mantén presionada la imagen y elige “Guardar imagen”.",
       );
     }
+  }
+
+  function toggleVoiceInput() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+      setListening(false);
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as SpeechWindow).SpeechRecognition ??
+      (window as SpeechWindow).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setError("Tu navegador no permite dictado por voz. Prueba con Chrome en Android.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-ES";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+      if (transcript) setPrompt((current) => (current ? `${current} ${transcript}` : transcript));
+    };
+    recognition.onerror = () => {
+      setError("No pude escuchar el audio. Revisa el permiso del micrófono e intenta otra vez.");
+      setListening(false);
+    };
+    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    setError(null);
+    setListening(true);
+    recognition.start();
   }
 
   return (
@@ -228,6 +332,23 @@ function Index() {
               rows={3}
               disabled={loading}
             />
+            <Button
+              type="button"
+              onClick={toggleVoiceInput}
+              disabled={loading}
+              variant={listening ? "destructive" : "outline"}
+              className="w-full"
+            >
+              {listening ? (
+                <>
+                  <Square className="size-4" /> Detener audio
+                </>
+              ) : (
+                <>
+                  <Mic className="size-4" /> Hablar descripción
+                </>
+              )}
+            </Button>
           </div>
 
           <Button
@@ -283,11 +404,15 @@ function Index() {
                   size="lg"
                 >
                   <Download className="size-4" />
-                  {isFinal ? "Descargar PNG" : "Esperando imagen final..."}
+                  {isFinal ? "Descargar PNG listo para imprimir" : "Esperando imagen final..."}
                 </Button>
+                {downloadReady && (
+                  <p className="text-xs text-primary text-center font-medium">
+                    Imagen lista: toca el botón para descargar el PNG.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground text-center">
-                  Tip: para sublimación usa 300 DPI y recorta el fondo blanco con tu programa de
-                  edición.
+                  Diseñado para sublimación con colores vivos y salida PNG.
                 </p>
               </>
             )}

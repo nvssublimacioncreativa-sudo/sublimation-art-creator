@@ -14,7 +14,14 @@ export const Route = createFileRoute("/api/generate-image")({
         const key = process.env.LOVABLE_API_KEY;
         if (!key) return new Response("Falta LOVABLE_API_KEY", { status: 500 });
 
-        // Si hay imagen, usar Gemini (soporta edición/inspiración a partir de imagen)
+        const sublimationPrompt = [
+          prompt.trim(),
+          "Crea un diseño premium para sublimación, listo para imprimir en PNG.",
+          "Usa colores vivos, alto contraste, bordes limpios, estilo profesional y composición centrada.",
+          "El resultado debe tener fondo transparente o fondo blanco puro fácil de recortar, sin mockups, sin marca de agua, sin texto extra no solicitado.",
+        ].join(" ");
+
+        // Si hay imagen, usar Gemini (soporta edición/inspiración a partir de imagen).
         // Si no, usar gpt-image-2 con calidad rápida.
         const body = image
           ? {
@@ -25,7 +32,7 @@ export const Route = createFileRoute("/api/generate-image")({
                 {
                   role: "user",
                   content: [
-                    { type: "text", text: prompt },
+                    { type: "text", text: sublimationPrompt },
                     { type: "image_url", image_url: { url: image } },
                   ],
                 },
@@ -33,7 +40,7 @@ export const Route = createFileRoute("/api/generate-image")({
             }
           : {
               model: "openai/gpt-image-2",
-              prompt,
+              prompt: sublimationPrompt,
               size: "1024x1024",
               quality: "low",
               n: 1,
@@ -41,18 +48,15 @@ export const Route = createFileRoute("/api/generate-image")({
               partial_images: 2,
             };
 
-        const upstream = await fetch(
-          "https://ai.gateway.lovable.dev/v1/images/generations",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${key}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-            signal: request.signal,
+        const upstream = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify(body),
+          signal: request.signal,
+        });
 
         if (!upstream.ok || !upstream.body) {
           const text = await upstream.text().catch(() => "");
