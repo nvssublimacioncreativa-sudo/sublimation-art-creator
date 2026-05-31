@@ -34,6 +34,7 @@ export async function streamImage(
   }
 
   let sawCompleted = false;
+  let lastDataUrl: string | null = null;
   const parser = createParser({
     onEvent(event) {
       if (
@@ -48,8 +49,10 @@ export async function streamImage(
         return;
       }
       const isFinal = event.event === "image_generation.completed";
+      const dataUrl = `data:image/png;base64,${payload.b64_json}`;
+      lastDataUrl = dataUrl;
       flushSync(() => {
-        onFrame(`data:image/png;base64,${payload.b64_json}`, isFinal);
+        onFrame(dataUrl, isFinal);
       });
       if (isFinal) sawCompleted = true;
     },
@@ -65,6 +68,16 @@ export async function streamImage(
   } finally {
     reader.cancel().catch(() => {});
   }
-  if (!sawCompleted)
-    throw new Error("La transmisión terminó sin completar la imagen");
+  if (!sawCompleted) {
+    // Algunos modelos (p. ej. Gemini) cierran el stream sin emitir
+    // "image_generation.completed". Si tenemos al menos un frame,
+    // lo marcamos como final para habilitar la descarga.
+    if (lastDataUrl) {
+      flushSync(() => {
+        onFrame(lastDataUrl!, true);
+      });
+    } else {
+      throw new Error("La transmisión terminó sin generar la imagen");
+    }
+  }
 }
