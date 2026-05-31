@@ -30,7 +30,22 @@ export async function streamImage(
 
   if (!res.ok || !res.body) {
     const msg = await res.text().catch(() => "");
-    throw new Error(msg || `Falló la generación (${res.status})`);
+    let readableMessage = msg;
+    try {
+      const parsed = JSON.parse(msg) as { message?: string; type?: string };
+      if (parsed.type === "payment_required" || parsed.message === "Not enough credits") {
+        readableMessage =
+          "No hay créditos de IA disponibles para generar imágenes. Agrega créditos en Lovable y vuelve a intentarlo.";
+      } else if (parsed.message) {
+        readableMessage = parsed.message;
+      }
+    } catch {
+      if (res.status === 402 || msg.includes("Not enough credits")) {
+        readableMessage =
+          "No hay créditos de IA disponibles para generar imágenes. Agrega créditos en Lovable y vuelve a intentarlo.";
+      }
+    }
+    throw new Error(readableMessage || `Falló la generación (${res.status})`);
   }
 
   let sawCompleted = false;
