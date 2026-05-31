@@ -92,6 +92,33 @@ function dataUrlToPngBlob(dataUrl: string) {
   return new Blob([bytes], { type: "image/png" });
 }
 
+async function imageToTransparentPngBlob(source: string) {
+  const image = new Image();
+  image.decoding = "async";
+  image.src = source;
+  await image.decode();
+
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const context = canvas.getContext("2d");
+  if (!context) return source.startsWith("data:") ? dataUrlToPngBlob(source) : fetch(source).then((r) => r.blob());
+
+  context.drawImage(image, 0, 0);
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  for (let index = 0; index < imageData.data.length; index += 4) {
+    const red = imageData.data[index];
+    const green = imageData.data[index + 1];
+    const blue = imageData.data[index + 2];
+    if (red > 245 && green > 245 && blue > 245) imageData.data[index + 3] = 0;
+  }
+  context.putImageData(imageData, 0, 0);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("PNG inválido"))), "image/png");
+  });
+}
+
 function Index() {
   const [prompt, setPrompt] = useState("");
   const [src, setSrc] = useState<string | null>(null);
