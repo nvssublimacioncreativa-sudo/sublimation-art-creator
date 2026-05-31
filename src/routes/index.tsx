@@ -132,7 +132,7 @@ function Index() {
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
       setError(
-        "No se pudo iniciar la descarga. Mantén presionada la imagen y elige “Guardar imagen”.,",
+        "No se pudo iniciar la descarga. Mantén presionada la imagen y elige “Guardar imagen”.",
       );
     }
   }
