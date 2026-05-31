@@ -176,7 +176,7 @@ function Index() {
   async function download() {
     if (!src || !isFinal) return;
     try {
-      const blob = src.startsWith("data:") ? dataUrlToPngBlob(src) : await fetch(src).then((r) => r.blob());
+      const blob = await imageToTransparentPngBlob(src);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
