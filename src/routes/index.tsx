@@ -99,6 +99,8 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const [downloadReady, setDownloadReady] = useState(false);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -121,13 +123,17 @@ function Index() {
     setError(null);
     setSrc(null);
     setIsFinal(false);
+    setDownloadReady(false);
     try {
       await streamImage(
         "/api/generate-image",
         p,
         (dataUrl, final) => {
           setSrc(dataUrl);
-          if (final) setIsFinal(true);
+          if (final) {
+            setIsFinal(true);
+            setDownloadReady(true);
+          }
         },
         undefined,
         uploadedImage ?? undefined,
@@ -142,8 +148,7 @@ function Index() {
   async function download() {
     if (!src || !isFinal) return;
     try {
-      const response = await fetch(src);
-      const blob = await response.blob();
+      const blob = src.startsWith("data:") ? dataUrlToPngBlob(src) : await fetch(src).then((r) => r.blob());
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -153,11 +158,43 @@ function Index() {
       a.click();
       a.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setDownloadReady(false);
     } catch {
       setError(
         "No se pudo iniciar la descarga. Mantén presionada la imagen y elige “Guardar imagen”.",
       );
     }
+  }
+
+  function toggleVoiceInput() {
+    const SpeechRecognition =
+      (window as SpeechWindow).SpeechRecognition ??
+      (window as SpeechWindow).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setError("Tu navegador no permite dictado por voz. Prueba con Chrome en Android.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-ES";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+      if (transcript) setPrompt((current) => (current ? `${current} ${transcript}` : transcript));
+    };
+    recognition.onerror = () => {
+      setError("No pude escuchar el audio. Revisa el permiso del micrófono e intenta otra vez.");
+      setListening(false);
+    };
+    recognition.onend = () => setListening(false);
+    setError(null);
+    setListening(true);
+    recognition.start();
   }
 
   return (
