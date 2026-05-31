@@ -73,7 +73,7 @@ type SpeechRecognitionConstructor = new () => {
   continuous: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((event: { results: SpeechRecognitionResultList }) => void) | null;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
   onerror: (() => void) | null;
   onend: (() => void) | null;
 };
