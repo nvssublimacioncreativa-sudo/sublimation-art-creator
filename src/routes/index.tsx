@@ -116,12 +116,25 @@ function Index() {
   }
 
 
-  function download() {
+  async function download() {
     if (!src || !isFinal) return;
-    const a = document.createElement("a");
-    a.href = src;
-    a.download = `sublimacion-${Date.now()}.png`;
-    a.click();
+    try {
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sublimacion-${Date.now()}.png`;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setError(
+        "No se pudo iniciar la descarga. Mantén presionada la imagen y elige “Guardar imagen”.,",
+      );
+    }
   }
 
   return (
