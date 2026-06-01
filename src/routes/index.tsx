@@ -179,25 +179,61 @@ function Index() {
     }
   }
 
+  async function triggerBlobDownload(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
   async function download() {
     if (!src || !isFinal) return;
+    const filename = `sublimacion-${Date.now()}.png`;
+    setError(null);
+
+    // 1) Intento: PNG con fondo transparente vía canvas
     try {
       const blob = await imageToTransparentPngBlob(src);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `sublimacion-${Date.now()}.png`;
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await triggerBlobDownload(blob, filename);
       setDownloadReady(false);
-    } catch {
-      setError(
-        "No se pudo iniciar la descarga. Mantén presionada la imagen y elige “Guardar imagen”.",
-      );
+      return;
+    } catch (e) {
+      console.warn("Descarga transparente falló, probando PNG directo", e);
     }
+
+    // 2) Intento: PNG directo desde data URL
+    try {
+      const blob = dataUrlToPngBlob(src);
+      await triggerBlobDownload(blob, filename);
+      setDownloadReady(false);
+      return;
+    } catch (e) {
+      console.warn("Descarga directa falló, abriendo en nueva pestaña", e);
+    }
+
+    // 3) Fallback (móvil/WebView): abrir en nueva pestaña para guardar manual
+    try {
+      const win = window.open();
+      if (win) {
+        win.document.write(
+          `<title>${filename}</title><body style="margin:0;background:#000;display:grid;place-items:center"><img src="${src}" style="max-width:100%;height:auto" alt="${filename}"/></body>`,
+        );
+        win.document.close();
+        setDownloadReady(false);
+        return;
+      }
+    } catch (e) {
+      console.error("Fallback de nueva pestaña falló", e);
+    }
+
+    setError(
+      "No se pudo iniciar la descarga automática. Mantén presionada la imagen y elige “Guardar imagen”.",
+    );
   }
 
   function toggleVoiceInput() {
