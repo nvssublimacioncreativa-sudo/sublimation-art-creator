@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { streamImage } from "@/lib/streamImage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -134,7 +134,88 @@ function Index() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [downloadReady, setDownloadReady] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadFilename, setDownloadFilename] = useState("");
+  const [preparingDownload, setPreparingDownload] = useState(false);
+  const downloadObjectUrlRef = useRef<string | null>(null);
   const recognitionRef = useRef<InstanceType<SpeechRecognitionConstructor> | null>(null);
+
+  useEffect(() => {
+    if (downloadObjectUrlRef.current) {
+      URL.revokeObjectURL(downloadObjectUrlRef.current);
+      downloadObjectUrlRef.current = null;
+    }
+    setDownloadUrl(null);
+
+    if (!src || !isFinal) {
+      setDownloadReady(false);
+      return;
+    }
+
+    let cancelled = false;
+    const filename = `sublimacion-${Date.now()}.png`;
+    setDownloadFilename(filename);
+    setPreparingDownload(true);
+    console.log("[Sublimarte] Preparando PNG descargable", {
+      filename,
+      sourceType: src.startsWith("data:") ? "data-url" : "url",
+      length: src.length,
+    });
+
+    async function prepareDownload() {
+      try {
+        const blob = await imageToTransparentPngBlob(src!);
+        if (cancelled) return;
+        const objectUrl = URL.createObjectURL(blob);
+        downloadObjectUrlRef.current = objectUrl;
+        setDownloadUrl(objectUrl);
+        setDownloadReady(true);
+        console.log("[Sublimarte] PNG listo para descargar", {
+          filename,
+          bytes: blob.size,
+          type: blob.type,
+        });
+      } catch (transparentError) {
+        console.warn(
+          "[Sublimarte] Canvas/transparencia falló; usando PNG directo",
+          transparentError,
+        );
+        try {
+          const response = await fetch(src!);
+          const blob = await response.blob();
+          if (cancelled) return;
+          const objectUrl = URL.createObjectURL(blob);
+          downloadObjectUrlRef.current = objectUrl;
+          setDownloadUrl(objectUrl);
+          setDownloadReady(true);
+          console.log("[Sublimarte] PNG directo listo para descargar", {
+            filename,
+            bytes: blob.size,
+            type: blob.type,
+          });
+        } catch (directError) {
+          if (cancelled) return;
+          console.error("[Sublimarte] No se pudo preparar la descarga", directError);
+          setError("La imagen se generó, pero no se pudo preparar el archivo PNG para descargar.");
+          setDownloadReady(false);
+        }
+      } finally {
+        if (!cancelled) setPreparingDownload(false);
+      }
+    }
+
+    prepareDownload();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [src, isFinal]);
+
+  useEffect(() => {
+    return () => {
+      if (downloadObjectUrlRef.current) URL.revokeObjectURL(downloadObjectUrlRef.current);
+    };
+  }, []);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
