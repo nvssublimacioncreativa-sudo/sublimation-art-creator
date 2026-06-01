@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { streamImage } from "@/lib/streamImage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -155,6 +155,7 @@ function Index() {
     let cancelled = false;
     const filename = `sublimacion-${Date.now()}.png`;
     setDownloadFilename(filename);
+    setDownloadReady(false);
     setPreparingDownload(true);
     console.log("[Sublimarte] Preparando PNG descargable", {
       filename,
@@ -260,7 +261,7 @@ function Index() {
     }
   }
 
-  function handleDownloadClick(event: React.MouseEvent<HTMLAnchorElement>) {
+  function handleDownloadClick(event: MouseEvent<HTMLAnchorElement>) {
     console.log("[Sublimarte] Click en Descargar PNG", {
       hasImage: Boolean(src),
       isFinal,
