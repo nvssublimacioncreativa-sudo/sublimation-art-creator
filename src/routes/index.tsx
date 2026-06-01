@@ -196,27 +196,26 @@ function Index() {
     const filename = `sublimacion-${Date.now()}.png`;
     setError(null);
 
-    // 1) Intento: PNG con fondo transparente vía canvas
+    // 1) Intento principal: fetch del data URL (el navegador decodifica nativamente)
     try {
-      const blob = await imageToTransparentPngBlob(src);
-      await triggerBlobDownload(blob, filename);
+      const res = await fetch(src);
+      const blob = await res.blob();
+      // Intentar versión transparente sobre el blob ya válido
+      try {
+        const objectUrl = URL.createObjectURL(blob);
+        const transparent = await imageToTransparentPngBlob(objectUrl);
+        URL.revokeObjectURL(objectUrl);
+        await triggerBlobDownload(transparent, filename);
+      } catch {
+        await triggerBlobDownload(blob, filename);
+      }
       setDownloadReady(false);
       return;
     } catch (e) {
-      console.warn("Descarga transparente falló, probando PNG directo", e);
+      console.warn("Descarga vía fetch falló, abriendo en nueva pestaña", e);
     }
 
-    // 2) Intento: PNG directo desde data URL
-    try {
-      const blob = dataUrlToPngBlob(src);
-      await triggerBlobDownload(blob, filename);
-      setDownloadReady(false);
-      return;
-    } catch (e) {
-      console.warn("Descarga directa falló, abriendo en nueva pestaña", e);
-    }
-
-    // 3) Fallback (móvil/WebView): abrir en nueva pestaña para guardar manual
+    // 2) Fallback (móvil/WebView): abrir en nueva pestaña para guardar manual
     try {
       const win = window.open();
       if (win) {
