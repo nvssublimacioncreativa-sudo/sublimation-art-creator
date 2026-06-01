@@ -488,15 +488,20 @@ function Index() {
                     </div>
                   )}
                 </div>
-                <Button
-                  onClick={download}
-                  disabled={!isFinal}
-                  variant="secondary"
-                  className="w-full"
-                  size="lg"
-                >
-                  <Download className="size-4" />
-                  {isFinal ? "Descargar PNG listo para imprimir" : "Esperando imagen final..."}
+                <Button asChild variant="secondary" className="w-full" size="lg">
+                  <a
+                    href={downloadUrl ?? "#"}
+                    download={downloadFilename || "sublimacion.png"}
+                    onClick={handleDownloadClick}
+                    aria-disabled={!isFinal || !downloadUrl}
+                  >
+                    <Download className="size-4" />
+                    {isFinal
+                      ? preparingDownload
+                        ? "Preparando PNG..."
+                        : "Descargar PNG listo para imprimir"
+                      : "Esperando imagen final..."}
+                  </a>
                 </Button>
                 {downloadReady && (
                   <p className="text-xs text-primary text-center font-medium">
