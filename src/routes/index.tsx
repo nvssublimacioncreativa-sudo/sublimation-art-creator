@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { streamImage } from "@/lib/streamImage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -134,7 +134,89 @@ function Index() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [downloadReady, setDownloadReady] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadFilename, setDownloadFilename] = useState("");
+  const [preparingDownload, setPreparingDownload] = useState(false);
+  const downloadObjectUrlRef = useRef<string | null>(null);
   const recognitionRef = useRef<InstanceType<SpeechRecognitionConstructor> | null>(null);
+
+  useEffect(() => {
+    if (downloadObjectUrlRef.current) {
+      URL.revokeObjectURL(downloadObjectUrlRef.current);
+      downloadObjectUrlRef.current = null;
+    }
+    setDownloadUrl(null);
+
+    if (!src || !isFinal) {
+      setDownloadReady(false);
+      return;
+    }
+
+    let cancelled = false;
+    const filename = `sublimacion-${Date.now()}.png`;
+    setDownloadFilename(filename);
+    setDownloadReady(false);
+    setPreparingDownload(true);
+    console.log("[Sublimarte] Preparando PNG descargable", {
+      filename,
+      sourceType: src.startsWith("data:") ? "data-url" : "url",
+      length: src.length,
+    });
+
+    async function prepareDownload() {
+      try {
+        const blob = await imageToTransparentPngBlob(src!);
+        if (cancelled) return;
+        const objectUrl = URL.createObjectURL(blob);
+        downloadObjectUrlRef.current = objectUrl;
+        setDownloadUrl(objectUrl);
+        setDownloadReady(true);
+        console.log("[Sublimarte] PNG listo para descargar", {
+          filename,
+          bytes: blob.size,
+          type: blob.type,
+        });
+      } catch (transparentError) {
+        console.warn(
+          "[Sublimarte] Canvas/transparencia falló; usando PNG directo",
+          transparentError,
+        );
+        try {
+          const response = await fetch(src!);
+          const blob = await response.blob();
+          if (cancelled) return;
+          const objectUrl = URL.createObjectURL(blob);
+          downloadObjectUrlRef.current = objectUrl;
+          setDownloadUrl(objectUrl);
+          setDownloadReady(true);
+          console.log("[Sublimarte] PNG directo listo para descargar", {
+            filename,
+            bytes: blob.size,
+            type: blob.type,
+          });
+        } catch (directError) {
+          if (cancelled) return;
+          console.error("[Sublimarte] No se pudo preparar la descarga", directError);
+          setError("La imagen se generó, pero no se pudo preparar el archivo PNG para descargar.");
+          setDownloadReady(false);
+        }
+      } finally {
+        if (!cancelled) setPreparingDownload(false);
+      }
+    }
+
+    prepareDownload();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [src, isFinal]);
+
+  useEffect(() => {
+    return () => {
+      if (downloadObjectUrlRef.current) URL.revokeObjectURL(downloadObjectUrlRef.current);
+    };
+  }, []);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -179,60 +261,35 @@ function Index() {
     }
   }
 
-  async function triggerBlobDownload(blob: Blob, filename: string) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
-  }
+  function handleDownloadClick(event: MouseEvent<HTMLAnchorElement>) {
+    console.log("[Sublimarte] Click en Descargar PNG", {
+      hasImage: Boolean(src),
+      isFinal,
+      hasDownloadUrl: Boolean(downloadUrl),
+      filename: downloadFilename,
+      userAgent: window.navigator.userAgent,
+    });
 
-  async function download() {
-    if (!src || !isFinal) return;
-    const filename = `sublimacion-${Date.now()}.png`;
-    setError(null);
-
-    // 1) Intento principal: fetch del data URL (el navegador decodifica nativamente)
-    try {
-      const res = await fetch(src);
-      const blob = await res.blob();
-      // Intentar versión transparente sobre el blob ya válido
-      try {
-        const objectUrl = URL.createObjectURL(blob);
-        const transparent = await imageToTransparentPngBlob(objectUrl);
-        URL.revokeObjectURL(objectUrl);
-        await triggerBlobDownload(transparent, filename);
-      } catch {
-        await triggerBlobDownload(blob, filename);
-      }
-      setDownloadReady(false);
+    if (!src) {
+      event.preventDefault();
+      setError("Primero genera una imagen para poder descargar el PNG.");
       return;
-    } catch (e) {
-      console.warn("Descarga vía fetch falló, abriendo en nueva pestaña", e);
     }
 
-    // 2) Fallback (móvil/WebView): abrir en nueva pestaña para guardar manual
-    try {
-      const win = window.open();
-      if (win) {
-        win.document.write(
-          `<title>${filename}</title><body style="margin:0;background:#000;display:grid;place-items:center"><img src="${src}" style="max-width:100%;height:auto" alt="${filename}"/></body>`,
-        );
-        win.document.close();
-        setDownloadReady(false);
-        return;
-      }
-    } catch (e) {
-      console.error("Fallback de nueva pestaña falló", e);
+    if (!isFinal) {
+      event.preventDefault();
+      setError("Espera a que la imagen termine de generarse antes de descargarla.");
+      return;
     }
 
-    setError(
-      "No se pudo iniciar la descarga automática. Mantén presionada la imagen y elige “Guardar imagen”.",
-    );
+    if (!downloadUrl) {
+      event.preventDefault();
+      setError("El archivo PNG todavía se está preparando. Intenta de nuevo en unos segundos.");
+      return;
+    }
+
+    setError(null);
+    setDownloadReady(false);
   }
 
   function toggleVoiceInput() {
@@ -431,15 +488,22 @@ function Index() {
                     </div>
                   )}
                 </div>
-                <Button
-                  onClick={download}
-                  disabled={!isFinal}
-                  variant="secondary"
-                  className="w-full"
-                  size="lg"
-                >
-                  <Download className="size-4" />
-                  {isFinal ? "Descargar PNG listo para imprimir" : "Esperando imagen final..."}
+                <Button asChild variant="secondary" className="w-full" size="lg">
+                  <a
+                    href={downloadUrl ?? "#"}
+                    download={downloadFilename || "sublimacion.png"}
+                    onClick={handleDownloadClick}
+                    target="_blank"
+                    rel="noopener"
+                    aria-disabled={!isFinal || !downloadUrl}
+                  >
+                    <Download className="size-4" />
+                    {isFinal
+                      ? preparingDownload
+                        ? "Preparando PNG..."
+                        : "Descargar PNG listo para imprimir"
+                      : "Esperando imagen final..."}
+                  </a>
                 </Button>
                 {downloadReady && (
                   <p className="text-xs text-primary text-center font-medium">
