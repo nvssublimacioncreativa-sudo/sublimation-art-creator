@@ -493,6 +493,8 @@ function Index() {
                     href={downloadUrl ?? "#"}
                     download={downloadFilename || "sublimacion.png"}
                     onClick={handleDownloadClick}
+                    target="_blank"
+                    rel="noopener"
                     aria-disabled={!isFinal || !downloadUrl}
                   >
                     <Download className="size-4" />
