@@ -157,48 +157,41 @@ function Index() {
     setDownloadFilename(filename);
     setDownloadReady(false);
     setPreparingDownload(true);
-    console.log("[Sublimarte] Preparando PNG descargable", {
-      filename,
-      sourceType: src.startsWith("data:") ? "data-url" : "url",
-      length: src.length,
-    });
+
+    const publish = (blob: Blob, label: string) => {
+      if (cancelled) return;
+      if (downloadObjectUrlRef.current) {
+        URL.revokeObjectURL(downloadObjectUrlRef.current);
+      }
+      const objectUrl = URL.createObjectURL(blob);
+      downloadObjectUrlRef.current = objectUrl;
+      setDownloadUrl(objectUrl);
+      setDownloadReady(true);
+      console.log("[Sublimarte] PNG listo", { label, bytes: blob.size, filename });
+    };
 
     async function prepareDownload() {
+      // Paso 1: blob descargable inmediato (sin canvas) para que el botón funcione ya.
+      let baseBlob: Blob | null = null;
       try {
-        const blob = await imageToTransparentPngBlob(src!);
-        if (cancelled) return;
-        const objectUrl = URL.createObjectURL(blob);
-        downloadObjectUrlRef.current = objectUrl;
-        setDownloadUrl(objectUrl);
-        setDownloadReady(true);
-        console.log("[Sublimarte] PNG listo para descargar", {
-          filename,
-          bytes: blob.size,
-          type: blob.type,
-        });
-      } catch (transparentError) {
-        console.warn(
-          "[Sublimarte] Canvas/transparencia falló; usando PNG directo",
-          transparentError,
-        );
-        try {
-          const response = await fetch(src!);
-          const blob = await response.blob();
-          if (cancelled) return;
-          const objectUrl = URL.createObjectURL(blob);
-          downloadObjectUrlRef.current = objectUrl;
-          setDownloadUrl(objectUrl);
-          setDownloadReady(true);
-          console.log("[Sublimarte] PNG directo listo para descargar", {
-            filename,
-            bytes: blob.size,
-            type: blob.type,
-          });
-        } catch (directError) {
-          if (cancelled) return;
-          console.error("[Sublimarte] No se pudo preparar la descarga", directError);
-          setError("La imagen se generó, pero no se pudo preparar el archivo PNG para descargar.");
-          setDownloadReady(false);
+        if (src!.startsWith("data:")) {
+          baseBlob = dataUrlToPngBlob(src!);
+        } else {
+          baseBlob = await fetch(src!).then((r) => r.blob());
+        }
+        publish(baseBlob, "directo");
+      } catch (e) {
+        console.error("[Sublimarte] No se pudo crear blob base", e);
+      }
+
+      // Paso 2: mejorar con transparencia si el canvas lo permite.
+      try {
+        const transparent = await imageToTransparentPngBlob(src!);
+        publish(transparent, "transparente");
+      } catch (e) {
+        console.warn("[Sublimarte] Transparencia falló, se usa PNG directo", e);
+        if (!baseBlob && !cancelled) {
+          setError("La imagen se generó, pero no se pudo preparar el PNG.");
         }
       } finally {
         if (!cancelled) setPreparingDownload(false);
