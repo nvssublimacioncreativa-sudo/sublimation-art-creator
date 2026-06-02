@@ -92,6 +92,28 @@ function dataUrlToPngBlob(dataUrl: string) {
   return new Blob([bytes], { type: "image/png" });
 }
 
+function triggerPngDownload(blob: Blob, filename: string) {
+  const pngBlob = blob.type === "image/png" ? blob : new Blob([blob], { type: "image/png" });
+  const objectUrl = URL.createObjectURL(pngBlob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename || `sublimacion-${Date.now()}.png`;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+}
+
+async function sharePngOnMobile(blob: Blob, filename: string) {
+  const file = new File([blob], filename || `sublimacion-${Date.now()}.png`, {
+    type: "image/png",
+  });
+  if (!navigator.canShare?.({ files: [file] })) return false;
+  await navigator.share({ files: [file], title: "PNG para sublimación" });
+  return true;
+}
+
 async function imageToTransparentPngBlob(source: string) {
   const image = new Image();
   image.decoding = "async";
@@ -138,6 +160,7 @@ function Index() {
   const [downloadFilename, setDownloadFilename] = useState("");
   const [preparingDownload, setPreparingDownload] = useState(false);
   const downloadObjectUrlRef = useRef<string | null>(null);
+  const downloadBlobRef = useRef<Blob | null>(null);
   const recognitionRef = useRef<InstanceType<SpeechRecognitionConstructor> | null>(null);
 
   useEffect(() => {
@@ -145,6 +168,7 @@ function Index() {
       URL.revokeObjectURL(downloadObjectUrlRef.current);
       downloadObjectUrlRef.current = null;
     }
+    downloadBlobRef.current = null;
     setDownloadUrl(null);
 
     if (!src || !isFinal) {
@@ -165,6 +189,7 @@ function Index() {
       }
       const objectUrl = URL.createObjectURL(blob);
       downloadObjectUrlRef.current = objectUrl;
+      downloadBlobRef.current = blob;
       setDownloadUrl(objectUrl);
       setDownloadReady(true);
       console.log("[Sublimarte] PNG listo", { label, bytes: blob.size, filename });
