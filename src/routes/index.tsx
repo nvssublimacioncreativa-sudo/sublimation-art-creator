@@ -202,7 +202,7 @@ function Index() {
         if (src!.startsWith("data:")) {
           baseBlob = dataUrlToPngBlob(src!);
         } else {
-        baseBlob = await fetch(src!).then((r) => r.blob());
+          baseBlob = await fetch(src!).then((r) => r.blob());
         }
         if (baseBlob) publish(baseBlob, "directo");
       } catch (e) {
@@ -305,7 +305,9 @@ function Index() {
 
     if (!blob) {
       try {
-        blob = src.startsWith("data:") ? dataUrlToPngBlob(src) : await fetch(src).then((r) => r.blob());
+        blob = src.startsWith("data:")
+          ? dataUrlToPngBlob(src)
+          : await fetch(src).then((r) => r.blob());
         downloadBlobRef.current = blob;
       } catch (e) {
         console.error("[Sublimarte] No se pudo recuperar el PNG para descargar", e);
