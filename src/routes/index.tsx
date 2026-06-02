@@ -92,6 +92,28 @@ function dataUrlToPngBlob(dataUrl: string) {
   return new Blob([bytes], { type: "image/png" });
 }
 
+function triggerPngDownload(blob: Blob, filename: string) {
+  const pngBlob = blob.type === "image/png" ? blob : new Blob([blob], { type: "image/png" });
+  const objectUrl = URL.createObjectURL(pngBlob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename || `sublimacion-${Date.now()}.png`;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+}
+
+async function sharePngOnMobile(blob: Blob, filename: string) {
+  const file = new File([blob], filename || `sublimacion-${Date.now()}.png`, {
+    type: "image/png",
+  });
+  if (!navigator.canShare?.({ files: [file] })) return false;
+  await navigator.share({ files: [file], title: "PNG para sublimación" });
+  return true;
+}
+
 async function imageToTransparentPngBlob(source: string) {
   const image = new Image();
   image.decoding = "async";
@@ -138,6 +160,7 @@ function Index() {
   const [downloadFilename, setDownloadFilename] = useState("");
   const [preparingDownload, setPreparingDownload] = useState(false);
   const downloadObjectUrlRef = useRef<string | null>(null);
+  const downloadBlobRef = useRef<Blob | null>(null);
   const recognitionRef = useRef<InstanceType<SpeechRecognitionConstructor> | null>(null);
 
   useEffect(() => {
@@ -145,6 +168,7 @@ function Index() {
       URL.revokeObjectURL(downloadObjectUrlRef.current);
       downloadObjectUrlRef.current = null;
     }
+    downloadBlobRef.current = null;
     setDownloadUrl(null);
 
     if (!src || !isFinal) {
@@ -165,6 +189,7 @@ function Index() {
       }
       const objectUrl = URL.createObjectURL(blob);
       downloadObjectUrlRef.current = objectUrl;
+      downloadBlobRef.current = blob;
       setDownloadUrl(objectUrl);
       setDownloadReady(true);
       console.log("[Sublimarte] PNG listo", { label, bytes: blob.size, filename });
@@ -177,7 +202,7 @@ function Index() {
         if (src!.startsWith("data:")) {
           baseBlob = dataUrlToPngBlob(src!);
         } else {
-        baseBlob = await fetch(src!).then((r) => r.blob());
+          baseBlob = await fetch(src!).then((r) => r.blob());
         }
         if (baseBlob) publish(baseBlob, "directo");
       } catch (e) {
@@ -254,35 +279,49 @@ function Index() {
     }
   }
 
-  function handleDownloadClick(event: MouseEvent<HTMLAnchorElement>) {
+  async function handleDownloadClick(event: MouseEvent<HTMLButtonElement>) {
     console.log("[Sublimarte] Click en Descargar PNG", {
       hasImage: Boolean(src),
       isFinal,
       hasDownloadUrl: Boolean(downloadUrl),
+      hasBlob: Boolean(downloadBlobRef.current),
       filename: downloadFilename,
       userAgent: window.navigator.userAgent,
     });
+    event.preventDefault();
 
     if (!src) {
-      event.preventDefault();
       setError("Primero genera una imagen para poder descargar el PNG.");
       return;
     }
 
     if (!isFinal) {
-      event.preventDefault();
       setError("Espera a que la imagen termine de generarse antes de descargarla.");
       return;
     }
 
-    if (!downloadUrl) {
-      event.preventDefault();
+    const filename = downloadFilename || `sublimacion-${Date.now()}.png`;
+    let blob = downloadBlobRef.current;
+
+    if (!blob) {
+      try {
+        blob = src.startsWith("data:")
+          ? dataUrlToPngBlob(src)
+          : await fetch(src).then((r) => r.blob());
+        downloadBlobRef.current = blob;
+      } catch (e) {
+        console.error("[Sublimarte] No se pudo recuperar el PNG para descargar", e);
+      }
+    }
+
+    if (!blob) {
       setError("El archivo PNG todavía se está preparando. Intenta de nuevo en unos segundos.");
       return;
     }
 
     setError(null);
-    setDownloadReady(false);
+    triggerPngDownload(blob, filename);
+    await sharePngOnMobile(blob, filename).catch(() => false);
   }
 
   function toggleVoiceInput() {
@@ -481,22 +520,20 @@ function Index() {
                     </div>
                   )}
                 </div>
-                <Button asChild variant="secondary" className="w-full" size="lg">
-                  <a
-                    href={downloadUrl ?? "#"}
-                    download={downloadFilename || "sublimacion.png"}
-                    onClick={handleDownloadClick}
-                    target="_blank"
-                    rel="noopener"
-                    aria-disabled={!isFinal || !downloadUrl}
-                  >
-                    <Download className="size-4" />
-                    {isFinal
-                      ? preparingDownload
-                        ? "Preparando PNG..."
-                        : "Descargar PNG listo para imprimir"
-                      : "Esperando imagen final..."}
-                  </a>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  size="lg"
+                  onClick={handleDownloadClick}
+                  disabled={!isFinal}
+                >
+                  <Download className="size-4" />
+                  {isFinal
+                    ? preparingDownload && !downloadBlobRef.current
+                      ? "Preparando PNG..."
+                      : "Descargar PNG listo para imprimir"
+                    : "Esperando imagen final..."}
                 </Button>
                 {downloadReady && (
                   <p className="text-xs text-primary text-center font-medium">
