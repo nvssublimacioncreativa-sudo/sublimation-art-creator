@@ -177,9 +177,9 @@ function Index() {
         if (src!.startsWith("data:")) {
           baseBlob = dataUrlToPngBlob(src!);
         } else {
-          baseBlob = await fetch(src!).then((r) => r.blob());
+        baseBlob = await fetch(src!).then((r) => r.blob());
         }
-        publish(baseBlob, "directo");
+        if (baseBlob) publish(baseBlob, "directo");
       } catch (e) {
         console.error("[Sublimarte] No se pudo crear blob base", e);
       }
