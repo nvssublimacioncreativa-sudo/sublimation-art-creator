@@ -518,22 +518,20 @@ function Index() {
                     </div>
                   )}
                 </div>
-                <Button asChild variant="secondary" className="w-full" size="lg">
-                  <a
-                    href={downloadUrl ?? "#"}
-                    download={downloadFilename || "sublimacion.png"}
-                    onClick={handleDownloadClick}
-                    target="_blank"
-                    rel="noopener"
-                    aria-disabled={!isFinal || !downloadUrl}
-                  >
-                    <Download className="size-4" />
-                    {isFinal
-                      ? preparingDownload
-                        ? "Preparando PNG..."
-                        : "Descargar PNG listo para imprimir"
-                      : "Esperando imagen final..."}
-                  </a>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  size="lg"
+                  onClick={handleDownloadClick}
+                  disabled={!isFinal}
+                >
+                  <Download className="size-4" />
+                  {isFinal
+                    ? preparingDownload && !downloadBlobRef.current
+                      ? "Preparando PNG..."
+                      : "Descargar PNG listo para imprimir"
+                    : "Esperando imagen final..."}
                 </Button>
                 {downloadReady && (
                   <p className="text-xs text-primary text-center font-medium">
