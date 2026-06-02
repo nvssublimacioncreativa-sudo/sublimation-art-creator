@@ -279,35 +279,47 @@ function Index() {
     }
   }
 
-  function handleDownloadClick(event: MouseEvent<HTMLAnchorElement>) {
+  async function handleDownloadClick(event: MouseEvent<HTMLButtonElement>) {
     console.log("[Sublimarte] Click en Descargar PNG", {
       hasImage: Boolean(src),
       isFinal,
       hasDownloadUrl: Boolean(downloadUrl),
+      hasBlob: Boolean(downloadBlobRef.current),
       filename: downloadFilename,
       userAgent: window.navigator.userAgent,
     });
+    event.preventDefault();
 
     if (!src) {
-      event.preventDefault();
       setError("Primero genera una imagen para poder descargar el PNG.");
       return;
     }
 
     if (!isFinal) {
-      event.preventDefault();
       setError("Espera a que la imagen termine de generarse antes de descargarla.");
       return;
     }
 
-    if (!downloadUrl) {
-      event.preventDefault();
+    const filename = downloadFilename || `sublimacion-${Date.now()}.png`;
+    let blob = downloadBlobRef.current;
+
+    if (!blob) {
+      try {
+        blob = src.startsWith("data:") ? dataUrlToPngBlob(src) : await fetch(src).then((r) => r.blob());
+        downloadBlobRef.current = blob;
+      } catch (e) {
+        console.error("[Sublimarte] No se pudo recuperar el PNG para descargar", e);
+      }
+    }
+
+    if (!blob) {
       setError("El archivo PNG todavía se está preparando. Intenta de nuevo en unos segundos.");
       return;
     }
 
     setError(null);
-    setDownloadReady(false);
+    triggerPngDownload(blob, filename);
+    await sharePngOnMobile(blob, filename).catch(() => false);
   }
 
   function toggleVoiceInput() {
